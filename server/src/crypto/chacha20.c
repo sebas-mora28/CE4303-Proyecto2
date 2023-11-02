@@ -2,6 +2,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
+/*
+ * This code is adapted from "chacha20-c" by Jeffrey Zhuang.
+ * Licensed under the MIT License.
+ * Source: https://github.com/Ginurx/chacha20-c/tree/master
+ */
+
 static uint32_t rotl32(uint32_t x, int n) 
 {
 	return (x << n) | (x >> (32 - n));
@@ -83,13 +89,7 @@ static void chacha20_block_next(struct chacha20_context *ctx) {
 	counter[0]++;
 	if (0 == counter[0]) 
 	{
-		// wrap around occured, increment higher 32 bits of counter
 		counter[1]++;
-		// Limited to 2^64 blocks of 64 bytes each.
-		// If you want to process more than 1180591620717411303424 bytes
-		// you have other problems.
-		// We could keep counting with counter[2] and counter[3] (nonce),
-		// but then we risk reusing the nonce which is very bad.
 		assert(0 != counter[1]);
 	}
 }
@@ -125,7 +125,7 @@ void chacha20(uint8_t *data, size_t size, uint8_t* out){
 
     struct chacha20_context ctx;
 
-        uint8_t key[32];
+    uint8_t key[32];
     for(int i=0; i<32; i++){
         key[i] = (uint8_t)(i);
     }

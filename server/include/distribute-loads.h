@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-void distribute_loads(uint8_t* data, int size);
+void distribute_loads(int* data, int size);
 
 #endif

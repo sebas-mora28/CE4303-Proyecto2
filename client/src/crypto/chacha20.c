@@ -2,6 +2,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
+/*
+ * This code is adapted from "chacha20-c" by Jeffrey Zhuang.
+ * Licensed under the MIT License.
+ * Source: https://github.com/Ginurx/chacha20-c/tree/master
+ */
+
 static uint32_t rotl32(uint32_t x, int n) 
 {
 	return (x << n) | (x >> (32 - n));
