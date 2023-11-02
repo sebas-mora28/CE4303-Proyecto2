@@ -10,31 +10,27 @@
 
 #define MAX_WORKERS 3
 
-void distribute_loads(int* data, int size){
-
+void distribute_loads(int* audio_data, int size){
         int destination;
         int offset = size / MAX_WORKERS;
-
-        printf("Size: %d\n", size);
-
         for (int i=0; i<MAX_WORKERS; i++)
         {
 
             destination = i+1;
-                
+        
             int start = i * offset;
             int end = i == MAX_WORKERS -1 ? size - 1 : start + offset -1;
             int chunk_size = end - start + 1;
 
-            int values[chunk_size]; 
+            int chunk[chunk_size]; 
             for(int j=0; j< chunk_size; j++){
-                values[j] = data[start + j];
+                chunk[j] = audio_data[start + j];
             };
 
             server_payload_t payload;
             payload.size = chunk_size;
             payload.workerId = destination;
-            memcpy(payload.data, values, chunk_size * sizeof(int));
+            memcpy(payload.data, chunk, chunk_size * sizeof(int));
 
             printf("Sending to worker %d\n", destination);
             MPI_Send(&payload, sizeof(payload), MPI_BYTE, destination, 0, MPI_COMM_WORLD);
