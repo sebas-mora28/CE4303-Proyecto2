@@ -1,24 +1,28 @@
 #include <mpi.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include "../include/types.h"
 
+#define CENTRAL_NODE 0
 
-void run_worker(){
+void worker(int id){
           
-    server_payload_t server_payload;
-    MPI_Recv(&server_payload, sizeof(server_payload), MPI_BYTE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
 
-    printf("Processing worker %d", server_payload.workerId);
+    int chunk_size; 
 
-    int audio_data[server_payload.size];
-    memcpy(audio_data, server_payload.data, server_payload.size * sizeof(int));    
+    while(1){
+        MPI_Recv(&chunk_size, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
+        uint8_t chunk[chunk_size];
+        MPI_Recv(&chunk, chunk_size, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
 
-    /**
-        Apply filter
-    */
-
-    // Send result to server
-    MPI_Barrier(MPI_COMM_WORLD);
+        printf("Processing worker %d chunk_size %d\n", id, chunk_size);
+        /**
+            Apply filter
+        */
+        int res = 200; // Here goes the result after applying the filter
+        MPI_Send(&res, 1, MPI_INT, CENTRAL_NODE, 0, MPI_COMM_WORLD);
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
 }

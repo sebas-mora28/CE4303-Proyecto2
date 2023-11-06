@@ -48,29 +48,35 @@ void server() {
         recv(client_socket, size_buffer, 128, 0);
         int size = atoi(size_buffer);
 
-        uint8_t encrypted_audio_data[size];    
+        printf("size %d\n", size);
+
+        uint8_t* encrypted_raw_data = (uint8_t*) malloc(sizeof(uint8_t) * size);    
         int total_bytes_received = 0;
         char buffer[BUFFER_SIZE];
-        int bytes_received = 0;
+        int bytes_received;
+        while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) != 0) {
 
-        while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) != -1) {
-          int j =0;
-          for(int i=total_bytes_received; i< (total_bytes_received + bytes_received)-1; i++){
-            encrypted_audio_data[i] = (uint8_t)buffer[j];
-            j++;
+          for(int i=0; i < bytes_received; i++){
+            encrypted_raw_data[total_bytes_received + i] = (uint8_t) buffer[i];
           }
           total_bytes_received += bytes_received;
-          if(total_bytes_received >= size){
-            break;
-          }
+          printf("bytes: %d\n", total_bytes_received);
         }
 
+        uint8_t* raw_data = (uint8_t*)(malloc(sizeof(uint8_t) * size));
+        chacha20(encrypted_raw_data, size, raw_data);
 
-        uint8_t* audio_data = (uint8_t*)(malloc(sizeof(uint8_t) * size));
-        chacha20(encrypted_audio_data, size, audio_data);
-
-
-        distribute_loads(audio_data, size);
+        FILE* file = fopen("out.wav", "w");
+        fwrite(raw_data, 1, size, file);
+        fclose(file);
+        SNDFILE* audio_file; 
+        SF_INFO sfinfo;
+        audio_file = sf_open("out.wav", SFM_RDWR, &sfinfo);
+        int audio_size = sfinfo.channels * sfinfo.frames;
+        int* audio_data = (int*)malloc(sizeof(int) * audio_size);
+        sf_read_int(audio_file, &audio_data[0] , sfinfo.frames);
+        sf_close(audio_file);
+        distribute_loads(audio_data, audio_size);
         
         // Close the client socket
         close(client_socket);

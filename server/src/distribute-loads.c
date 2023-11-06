@@ -8,18 +8,19 @@
 #include <unistd.h>
 #include "../include/types.h"
 
-#define MAX_WORKERS 3
-
 void distribute_loads(int* audio_data, int size){
-        int destination;
-        int offset = size / MAX_WORKERS;
-        for (int i=0; i<MAX_WORKERS; i++)
-        {
 
-            destination = i+1;
+        int world_size;
+        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+        world_size--;
         
+        int destination;
+        int offset = size / world_size;
+        for (int i=0; i<world_size; i++)
+        {
+            destination = i+1;
             int start = i * offset;
-            int end = i == MAX_WORKERS -1 ? size - 1 : start + offset -1;
+            int end = i == world_size -1 ? size - 1 : start + offset -1;
             int chunk_size = end - start + 1;
 
             int chunk[chunk_size]; 
@@ -27,22 +28,18 @@ void distribute_loads(int* audio_data, int size){
                 chunk[j] = audio_data[start + j];
             };
 
-            server_payload_t payload;
-            payload.size = chunk_size;
-            payload.workerId = destination;
-            memcpy(payload.data, chunk, chunk_size * sizeof(int));
-
             printf("Sending to worker %d\n", destination);
-            MPI_Send(&payload, sizeof(payload), MPI_BYTE, destination, 0, MPI_COMM_WORLD);
+            MPI_Send(&chunk_size, 1, MPI_INT, destination, 0, MPI_COMM_WORLD);
+            MPI_Send(&chunk[start], chunk_size , MPI_CHAR, destination, 0, MPI_COMM_WORLD);
         }
        
 
         int source;
-        for(int i=0; i<MAX_WORKERS; i++){
+        for(int i=0; i<world_size; i++){
             source = i + 1;
-            printf("Receiving result from worker %d", source);       
-
-            //MPI_Recv(&payload, sizeof(payload), MPI_BYTE, source, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
+            int res;
+            MPI_Recv(&res, 1, MPI_INT, MPI_ANY_SOURCE , 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
+            printf("Receiving result from worker %d: %d\n", source, res);       
         }
 
         MPI_Barrier(MPI_COMM_WORLD);

@@ -5,6 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void run_worker();
+void worker(int id);
 
 #endif

@@ -33,6 +33,7 @@ int main(int argc, char* argv[]){
 
     uint8_t* encrypt_data = (uint8_t*)malloc(sizeof(uint8_t) * size);       
     chacha20(data, size, encrypt_data);
+
     send_data(encrypt_data, size);
 
     return 0;

@@ -120,7 +120,7 @@ static void chacha20_xor(struct chacha20_context *ctx, uint8_t *bytes, size_t n_
 			chacha20_block_next(ctx);
 			ctx->position = 0;
 		}
-		out[i] = (uint8_t) (bytes[i] ^ keystream8[i]);
+		out[i] = (uint8_t) (bytes[i] ^ keystream8[ctx->position]);
 		ctx->position++;
 	}
 }

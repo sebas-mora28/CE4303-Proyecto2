@@ -94,7 +94,7 @@ static void chacha20_block_next(struct chacha20_context *ctx) {
 	}
 }
 
-void chacha20_init_context(struct chacha20_context *ctx, uint8_t key[], uint8_t nonce[], uint64_t counter)
+static void chacha20_init_context(struct chacha20_context *ctx, uint8_t key[], uint8_t nonce[], uint64_t counter)
 {
 	memset(ctx, 0, sizeof(struct chacha20_context));
 	chacha20_init_block(ctx, key, nonce);
@@ -104,7 +104,7 @@ void chacha20_init_context(struct chacha20_context *ctx, uint8_t key[], uint8_t 
 	ctx->position = 64;
 }
 
-void chacha20_xor(struct chacha20_context *ctx, uint8_t *bytes, size_t n_bytes, uint8_t* out)
+static void chacha20_xor(struct chacha20_context *ctx, uint8_t *bytes, size_t n_bytes, uint8_t* out)
 {
 	uint8_t *keystream8 = (uint8_t*)ctx->keystream32;
 	for (size_t i = 0; i < n_bytes; i++) 
@@ -114,7 +114,7 @@ void chacha20_xor(struct chacha20_context *ctx, uint8_t *bytes, size_t n_bytes, 
 			chacha20_block_next(ctx);
 			ctx->position = 0;
 		}
-		out[i] = (uint8_t) (bytes[i] ^ keystream8[i]);
+		out[i] = (uint8_t) (bytes[i] ^ keystream8[ctx->position]);
 		ctx->position++;
 	}
 }
