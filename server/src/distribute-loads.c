@@ -7,41 +7,49 @@
 #include <string.h>
 #include <unistd.h>
 #include "../include/types.h"
+#include "../include/chacha20.h"
+#include "../include/comm.h"
+#include <math.h>
 
-void distribute_loads(int* audio_data, int size){
+#define QUANTUM 0.1 // 100 ms
 
-        int world_size;
-        MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-        world_size--;
-        
-        int destination;
-        int offset = size / world_size;
-        for (int i=0; i<world_size; i++)
-        {
-            destination = i+1;
-            int start = i * offset;
-            int end = i == world_size -1 ? size - 1 : start + offset -1;
-            int chunk_size = end - start + 1;
+#define NODES 2
 
-            int chunk[chunk_size]; 
-            for(int j=0; j< chunk_size; j++){
-                chunk[j] = audio_data[start + j];
-            };
 
-            printf("Sending to worker %d\n", destination);
-            MPI_Send(&chunk_size, 1, MPI_INT, destination, 0, MPI_COMM_WORLD);
-            MPI_Send(&chunk[start], chunk_size , MPI_CHAR, destination, 0, MPI_COMM_WORLD);
+void distribute_loads(int* audio_data, int size, int sample_rate){
+    int chunk_size = (int)(QUANTUM * sample_rate);
+    printf("size: %d - time_ms %d - chunk_size %d  n: %d\n", size, sample_rate, chunk_size, size / chunk_size);
+    int bytes_received = 0;
+    int start;
+    int counter = 0;
+    while(bytes_received < size){
+        int nodes_used = 0;
+
+        if(size - bytes_received < chunk_size * NODES){;
+            break;
         }
-       
-
-        int source;
-        for(int i=0; i<world_size; i++){
-            source = i + 1;
-            int res;
-            MPI_Recv(&res, 1, MPI_INT, MPI_ANY_SOURCE , 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
-            printf("Receiving result from worker %d: %d\n", source, res);       
+        for(int i=1; i<= NODES; i++){
+            printf("counter %d start %d\n", counter, start);
+            start =  counter* chunk_size;
+            server_payload_t payload;
+            payload.size = chunk_size;
+            payload.workerId = i;
+            for(int x=0; x< chunk_size; x++){
+                payload.data[x] = audio_data[start + x];
+            } 
+            send_payload(&payload, i);
+            bytes_received += chunk_size;
+            counter++;
+            nodes_used++;
+        }          
+        for(int source=1; source <=nodes_used; source++){
+            worker_result_t result;
+            recv_result(&result, source); 
+            printf("Receiving result from worker %d: %3.15f\n", source, result.freq_4);     
         }
-
         MPI_Barrier(MPI_COMM_WORLD);
-    }   
+        printf("-----------------------------------------------------------\n");
+    }
+    printf("Counter %d \n", counter);
+}   
 

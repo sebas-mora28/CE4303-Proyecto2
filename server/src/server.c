@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +8,9 @@
 #include "../include/chacha20.h"
 #include <sndfile.h>
 #include "../include/distribute-loads.h"
-
+#include "math.h"
 #define BUFFER_SIZE 1000000
+#define TEMP_FILE "temp.wav"
 
 void server() {
     // Create a socket
@@ -35,7 +37,7 @@ void server() {
         perror("Listening failed");
         exit(1);
     }
-
+    printf("Listening...\n");
     while (1) {
         // Accept a client connection
         int client_socket = accept(server_socket, NULL, NULL);
@@ -60,23 +62,25 @@ void server() {
             encrypted_raw_data[total_bytes_received + i] = (uint8_t) buffer[i];
           }
           total_bytes_received += bytes_received;
-          printf("bytes: %d\n", total_bytes_received);
         }
 
         uint8_t* raw_data = (uint8_t*)(malloc(sizeof(uint8_t) * size));
         chacha20(encrypted_raw_data, size, raw_data);
 
-        FILE* file = fopen("out.wav", "w");
+
+        FILE* file = fopen(TEMP_FILE, "w");
         fwrite(raw_data, 1, size, file);
         fclose(file);
-        SNDFILE* audio_file; 
-        SF_INFO sfinfo;
-        audio_file = sf_open("out.wav", SFM_RDWR, &sfinfo);
+        SNDFILE* audio_file; SF_INFO sfinfo;
+        audio_file = sf_open(TEMP_FILE, SFM_RDWR, &sfinfo);
         int audio_size = sfinfo.channels * sfinfo.frames;
         int* audio_data = (int*)malloc(sizeof(int) * audio_size);
         sf_read_int(audio_file, &audio_data[0] , sfinfo.frames);
         sf_close(audio_file);
-        distribute_loads(audio_data, audio_size);
+
+    
+        //int time_ms = ceil(((float)sfinfo.frames / sfinfo.samplerate) * 1000);
+        distribute_loads(audio_data, audio_size, sfinfo.samplerate);
         
         // Close the client socket
         close(client_socket);

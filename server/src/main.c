@@ -4,7 +4,6 @@
 #include <string.h>
 #include <unistd.h>
 #include "../include/server.h"
-#include "../include/types.h"
 #include "../include/worker.h"
 
 
