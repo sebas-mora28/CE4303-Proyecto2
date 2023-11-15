@@ -4,25 +4,29 @@
 #include <string.h>
 #include <unistd.h>
 #include "../include/types.h"
+#include "../include/chacha20.h"
+#include "../include/comm.h"
 
-#define CENTRAL_NODE 0
 
 void worker(int id){
           
-
-    int chunk_size; 
-
     while(1){
-        MPI_Recv(&chunk_size, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
-        uint8_t chunk[chunk_size];
-        MPI_Recv(&chunk, chunk_size, MPI_CHAR, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);    
+        
+        server_payload_t payload;
+        recv_payload(&payload);
 
-        printf("Processing worker %d chunk_size %d\n", id, chunk_size);
+        //printf("Processing worker %d chunk_size %d\n", id, payload.size);
         /**
             Apply filter
         */
-        int res = 200; // Here goes the result after applying the filter
-        MPI_Send(&res, 1, MPI_INT, CENTRAL_NODE, 0, MPI_COMM_WORLD);
+
+        worker_result_t result; 
+        result.freq_1 = 1;
+        result.freq_2 = 2;
+        result.freq_2 = 3;
+        result.freq_4 = 4;
+
+        send_result(&result);
         MPI_Barrier(MPI_COMM_WORLD);
     }
 }
