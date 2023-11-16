@@ -3,11 +3,14 @@
 
 #include "types.h"
 #include <inttypes.h>
+#include <stdbool.h>
 #include <pthread.h>
 
 typedef enum{
-    PLAYING, 
-    STOP
+    PLAYING,
+    PAUSE, 
+    STOP, 
+    DEAD
 }player_state_t;
 
 typedef struct {
@@ -28,6 +31,10 @@ int player_create(char* tty_name, player_t* player_result);
 
 int player_reproduce(player_t* player, worker_result_t* notes, size_t notes_len,
                      uint32_t time_step_us);
+
+void player_pause(player_t* player);
+
+void player_continue(player_t* player);
 
 int player_kill(player_t* player);
 

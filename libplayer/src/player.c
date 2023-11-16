@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -16,7 +17,7 @@ char* ERR_STR = "@ERROR;";
 
 // return 0 if success, -1 otherwise
 int player_create(char* tty_name, player_t* player_result) {
-  int fd = open(tty_name, O_RDWR | O_NOCTTY);
+  int fd = open(tty_name, O_RDWR | O_NOCTTY | O_NDELAY);
   if (fd < 0) {
     perror("Error opening serial communication");
   }
@@ -27,6 +28,7 @@ int player_create(char* tty_name, player_t* player_result) {
   }
   cfsetospeed(&tty, B921600);
   cfsetispeed(&tty, B921600);
+  fcntl(fd, F_SETFL, 0);
   // 8bit word, R enable y quitar señales de control
   // valores no explícitos pero implícitos por ser default:
   // - Sin paridad
@@ -52,6 +54,8 @@ int player_create(char* tty_name, player_t* player_result) {
   }
   memset(player_result, 0, sizeof(player_t));
   player_result->fd = fd;
+  sleep(1);
+  tcflush(fd, TCIOFLUSH);
   return 0;
 }
 
@@ -67,8 +71,14 @@ static int player_send_note__(player_t* player, int channel, float freq) {
     perror("Serial device read fail");
     return -1;
   }
-  if (strcmp(rbuffer, ERR_STR) == 0) {
-    perror("Unkown error triggered on firmware");
+  if (strcmp(rbuffer, wbuffer) != 0) {
+    tcflush(player->fd, TCIOFLUSH);
+    fprintf(stderr, "read buffer: %s write buffer: %s", rbuffer, wbuffer);
+    if (strcmp(rbuffer, ERR_STR) == 0) {
+      perror("Unkown issue triggered on the firmware side");
+    } else {
+      perror("Protocol error: response is not a command echo");
+    }
     return -1;
   }
   return 0;
@@ -78,8 +88,9 @@ static void* player_reproduce_thread__(void* args) {
   player_t* player = (player_t*)args;
   (void)args;
   size_t note_index = 0;
-  while (1) {
-    if(note_index >= player->notes_len){
+  bool keep_looping = true;
+  while (keep_looping) {
+    if (note_index >= player->notes_len) {
       break;
     }
     usleep(player->time_step_us);
@@ -90,11 +101,21 @@ static void* player_reproduce_thread__(void* args) {
         player_send_note__(player, 2, player->notes[note_index].freq_3);
         note_index++;
         break;
+      case STOP:
+        keep_looping = false;
+        break;
       default:
-        // STOP
+        // PAUSE
+        player_send_note__(player, 0, 0);
+        player_send_note__(player, 1, 0);
+        player_send_note__(player, 2, 0);
         break;
     }
   }
+  player_send_note__(player, 0, 0);
+  player_send_note__(player, 1, 0);
+  player_send_note__(player, 2, 0);
+  player->state = DEAD;
   pthread_exit(0);
   return NULL;
 }
@@ -114,13 +135,18 @@ int player_reproduce(player_t* player, worker_result_t* notes, size_t notes_len,
   player->state = PLAYING;
 
   return pthread_create(&player->thread_handle, NULL, player_reproduce_thread__,
-                 player);
-
+                        player);
 }
 
+void player_pause(player_t* player) { player->state = PAUSE; }
+
+void player_continue(player_t* player) { player->state = PLAYING; }
+
 int player_kill(player_t* player) {
+  player->state = STOP;
+  while (player->state != DEAD) {
+    continue;
+  }
   free(player->notes);
   return close(player->fd);
 }
-
-void hello_player() { printf("hello from the lib"); }
