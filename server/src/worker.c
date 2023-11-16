@@ -15,9 +15,8 @@ void worker(int id){
         server_payload_t payload;
         recv_payload(&payload);
 
-        //printf("Processing worker %d chunk_size %d\n", id, payload.size);
         /**
-            Apply filter
+            Apply filter or whatever
         */
 
         worker_result_t result; 
