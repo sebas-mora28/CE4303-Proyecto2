@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-void distribute_loads(int* data, int size);
+void distribute_loads(float* data, int size, int time_ms);
 
 #endif

@@ -5,7 +5,7 @@ BINDIR= bin
 SRCEXT= c
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(SOURCES:.$(SRCEXT)=.o)
-LIBS= -lsndfile
+LIBS= -lsndfile -lm
 
 all: exec 
 
@@ -18,7 +18,7 @@ build: $(OBJECTS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 exec: build
-	mpirun ./$(BINDIR)/server
+	mpirun -np 3 ./$(BINDIR)/server
 
 
 debug: build

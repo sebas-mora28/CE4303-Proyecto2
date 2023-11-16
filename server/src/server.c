@@ -74,13 +74,19 @@ void server() {
         SNDFILE* audio_file; SF_INFO sfinfo;
         audio_file = sf_open(TEMP_FILE, SFM_RDWR, &sfinfo);
         int audio_size = sfinfo.channels * sfinfo.frames;
-        int* audio_data = (int*)malloc(sizeof(int) * audio_size);
-        sf_read_int(audio_file, &audio_data[0] , sfinfo.frames);
+        float* audio_data = (float*)malloc(sizeof(int) * audio_size);
+        sf_read_float(audio_file, &audio_data[0] , sfinfo.frames);
         sf_close(audio_file);
 
+
+        float* y = malloc(sizeof(float) * (audio_size / 2));
+
+        for(int i=0; i < audio_size; i+=2){
+            y[i] = (audio_data[i] + audio_data[i+1]) / 2;
+        }
+
     
-        //int time_ms = ceil(((float)sfinfo.frames / sfinfo.samplerate) * 1000);
-        distribute_loads(audio_data, audio_size, sfinfo.samplerate);
+        distribute_loads(y, audio_size / 2, sfinfo.samplerate);
         
         // Close the client socket
         close(client_socket);
