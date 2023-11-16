@@ -60,6 +60,7 @@ void distribute_loads(float* audio_data, int size, int sample_rate){
             start =  counter* chunk_size;
             server_payload_t payload;
             payload.size = chunk_size;
+            payload.samplerate = sample_rate;
             for(int x=0; x< chunk_size; x++){
                 payload.data[x] = out[start + x];
             } 
