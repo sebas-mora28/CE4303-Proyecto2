@@ -18,7 +18,7 @@ build: $(OBJECTS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 exec: build
-	./$(BINDIR)/client
+	./$(BINDIR)/client $(file)
 
 
 debug: build

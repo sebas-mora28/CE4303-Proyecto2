@@ -26,10 +26,19 @@ int main(int argc, char* argv[]){
     long size = ftell(file);
     rewind(file);
 
-    uint8_t data[size];
+    uint8_t* data = malloc(sizeof(uint8_t) * size);
     fread(data, 1, size, file);
     fclose(file);
 
+    SNDFILE* audio_file; SF_INFO sfinfo;
+    audio_file = sf_open(filename, SFM_RDWR, &sfinfo);
+    int audio_size = sfinfo.channels * sfinfo.frames;
+    float* audio_data = (float*)malloc(sizeof(int) * audio_size);
+    sf_read_float(audio_file, &audio_data[0] , sfinfo.frames);
+    sf_close(audio_file);
+
+
+    printf("chanel %d\n", sfinfo.channels);
 
     uint8_t* encrypt_data = (uint8_t*)malloc(sizeof(uint8_t) * size);       
     chacha20(data, size, encrypt_data);

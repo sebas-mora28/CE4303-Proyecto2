@@ -15,34 +15,49 @@
 
 #define NODES 2
 
+int zeros_amount(int size, int chunk_size, int* num_chunks){
+    int num_zeros = chunk_size * *num_chunks - size;
+    if(*num_chunks % NODES != 0){
+        num_zeros += chunk_size;
+        (*num_chunks)++;
+    } 
+    return num_zeros;
+}
 
-void distribute_loads(int* audio_data, int size, int sample_rate){
+void fill_zeros(float * audio_data, int size, int num_zeros, float* out){
+
+    for(int i=0; i< size; i++){
+        out[i] = audio_data[i];
+    }
+
+    for(int j=0; j < num_zeros; j++){
+        out[size + j] = 0.0;
+    }
+}
+
+
+
+void distribute_loads(float* audio_data, int size, int sample_rate){
     int chunk_size = (int)(QUANTUM * sample_rate);
-    printf("size: %d - time_ms %d - chunk_size %d  n: %d\n", size, sample_rate, chunk_size, size / chunk_size);
-    int bytes_received = 0;
+    int num_chunks = ceil((float) size / chunk_size);
+    int num_zeros = zeros_amount(size, chunk_size, &num_chunks);  
+    float* out = (float*) malloc(sizeof(float) * (size + num_zeros));
+    fill_zeros(audio_data, size, chunk_size, out);
     int start;
     int counter = 0;
-    while(bytes_received < size){
-        int nodes_used = 0;
+    while(counter < num_chunks){
 
-        if(size - bytes_received < chunk_size * NODES){;
-            break;
-        }
         for(int i=1; i<= NODES; i++){
-            printf("counter %d start %d\n", counter, start);
             start =  counter* chunk_size;
             server_payload_t payload;
             payload.size = chunk_size;
-            payload.workerId = i;
             for(int x=0; x< chunk_size; x++){
-                payload.data[x] = audio_data[start + x];
+                payload.data[x] = out[start + x];
             } 
             send_payload(&payload, i);
-            bytes_received += chunk_size;
             counter++;
-            nodes_used++;
         }          
-        for(int source=1; source <=nodes_used; source++){
+        for(int source=1; source <=NODES; source++){
             worker_result_t result;
             recv_result(&result, source); 
             printf("Receiving result from worker %d: %3.15f\n", source, result.freq_4);     
