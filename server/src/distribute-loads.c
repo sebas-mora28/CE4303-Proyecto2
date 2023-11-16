@@ -15,13 +15,21 @@
 
 #define NODES 2
 
-int zeros_amount(int size, int chunk_size, int* num_chunks){
-    int num_zeros = chunk_size * *num_chunks - size;
-    if(*num_chunks % NODES != 0){
-        num_zeros += chunk_size;
-        (*num_chunks)++;
+int calculate_zeros(int size, int chunk_size, int num_chunks){
+    int num_zeros = chunk_size * num_chunks - size;
+    if(num_chunks % NODES != 0){
+        num_zeros += chunk_size;;
     } 
     return num_zeros;
+}
+
+int calculate_chunks(int size, int chunk_size){
+    int num_chunks = ceil((float) size / chunk_size);
+    printf("num chunks linea 28 %d\n", num_chunks);
+    if(num_chunks % NODES != 0){
+        num_chunks++;
+    }
+    return num_chunks;
 }
 
 void fill_zeros(float * audio_data, int size, int num_zeros, float* out){
@@ -39,14 +47,15 @@ void fill_zeros(float * audio_data, int size, int num_zeros, float* out){
 
 void distribute_loads(float* audio_data, int size, int sample_rate){
     int chunk_size = (int)(QUANTUM * sample_rate);
-    int num_chunks = ceil((float) size / chunk_size);
-    int num_zeros = zeros_amount(size, chunk_size, &num_chunks);  
-    float* out = (float*) malloc(sizeof(float) * (size + num_zeros));
-    fill_zeros(audio_data, size, chunk_size, out);
+    int num_chunks = calculate_chunks(size, chunk_size);
+    int num_zeros = calculate_zeros(size, chunk_size, num_chunks);  
+
+    float* out = (float*) malloc(sizeof(float) * (size + num_zeros)); // new size iss size + num_zeros
+    fill_zeros(audio_data, size, num_zeros, out);
+
     int start;
     int counter = 0;
     while(counter < num_chunks){
-
         for(int i=1; i<= NODES; i++){
             start =  counter* chunk_size;
             server_payload_t payload;
@@ -65,6 +74,6 @@ void distribute_loads(float* audio_data, int size, int sample_rate){
         MPI_Barrier(MPI_COMM_WORLD);
         printf("-----------------------------------------------------------\n");
     }
-    printf("Counter %d \n", counter);
+    printf("Processing completed successfully");
 }   
 

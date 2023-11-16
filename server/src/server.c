@@ -12,6 +12,7 @@
 #define BUFFER_SIZE 1000000
 #define TEMP_FILE "temp.wav"
 
+
 void server() {
     // Create a socket
     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -49,9 +50,6 @@ void server() {
         char size_buffer[128];
         recv(client_socket, size_buffer, 128, 0);
         int size = atoi(size_buffer);
-
-        printf("size %d\n", size);
-
         uint8_t* encrypted_raw_data = (uint8_t*) malloc(sizeof(uint8_t) * size);    
         int total_bytes_received = 0;
         char buffer[BUFFER_SIZE];
@@ -72,21 +70,21 @@ void server() {
         fwrite(raw_data, 1, size, file);
         fclose(file);
         SNDFILE* audio_file; SF_INFO sfinfo;
-        audio_file = sf_open(TEMP_FILE, SFM_RDWR, &sfinfo);
-        int audio_size = sfinfo.channels * sfinfo.frames;
-        float* audio_data = (float*)malloc(sizeof(int) * audio_size);
-        sf_read_float(audio_file, &audio_data[0] , sfinfo.frames);
+        audio_file = sf_open(TEMP_FILE, SFM_READ, &sfinfo);
+        int items = sfinfo.channels * sfinfo.frames;
+        float* audio_data = (float*)malloc(sizeof(float) * items);
+        sf_read_float(audio_file, &audio_data[0] , items);
         sf_close(audio_file);
 
-
-        float* y = malloc(sizeof(float) * (audio_size / 2));
-
-        for(int i=0; i < audio_size; i+=2){
-            y[i] = (audio_data[i] + audio_data[i+1]) / 2;
+        int channels_combined_size = items / 2;
+        float* channels_combined = malloc(sizeof(float) * channels_combined_size);
+        int index = 0;
+        for(int i=0; i < items ; i+= 1){
+            channels_combined[index] = (audio_data[i] + audio_data[i+1]) / 2;
+            index++;
         }
-
     
-        distribute_loads(y, audio_size / 2, sfinfo.samplerate);
+        distribute_loads(channels_combined, channels_combined_size, sfinfo.samplerate);
         
         // Close the client socket
         close(client_socket);
