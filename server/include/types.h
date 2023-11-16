@@ -7,6 +7,7 @@
 #define MAX_DATA_LENGTH 512000
 
 typedef struct {
+    int samplerate;
     int size;
     float data[MAX_DATA_LENGTH];
 } server_payload_t;
