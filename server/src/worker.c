@@ -41,6 +41,8 @@ void worker(int id) {
       return; // or handle the error appropriately
     }
 
+
+    printf("Llega\n");
     for (size_t i = 0; i < payload->num_chunks; i++) {
       worker_result_t result = get_frequencies(
           &(payload->data[i * payload->chunk_size]), payload->chunk_size,
@@ -55,7 +57,7 @@ void worker(int id) {
 
     send_result(payload_result);
     MPI_Barrier(MPI_COMM_WORLD);
-  }
+    }
 
   free(payload_result);
 }
