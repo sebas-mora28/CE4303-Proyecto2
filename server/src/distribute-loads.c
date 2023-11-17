@@ -1,5 +1,5 @@
 
-
+#include "player.h"
 #include <mpi.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -53,8 +53,13 @@ void distribute_loads(float* audio_data, int size, int sample_rate){
     float* out = (float*) malloc(sizeof(float) * (size + num_zeros)); // new size iss size + num_zeros
     fill_zeros(audio_data, size, num_zeros, out);
 
+
+    printf("chunk_sizes %d\n num_zeros: %d  size %d\n", num_chunks, num_zeros, size);
+
+    worker_result_t* results = (worker_result_t*) malloc(sizeof(worker_result_t) * num_chunks);
     int start;
     int counter = 0;
+    int results_index = 0;
     while(counter < num_chunks){
         for(int i=1; i<= NODES; i++){
             start =  counter* chunk_size;
@@ -70,11 +75,27 @@ void distribute_loads(float* audio_data, int size, int sample_rate){
         for(int source=1; source <=NODES; source++){
             worker_result_t result;
             recv_result(&result, source); 
-            printf("Receiving result from worker %d: %3.15f\n", source, result.freq_4);     
+            printf("Worker %d: freq 1: %3.10f \t freq2: %3.10f \t freq3: %3.10f \t freq4: %3.10f\n", 
+            source, 
+            result.freq_1, 
+            result.freq_2, 
+            result.freq_3, 
+            result.freq_4
+            );     
+            results[results_index] = result;
+            results_index++;
         }
         MPI_Barrier(MPI_COMM_WORLD);
         printf("-----------------------------------------------------------\n");
     }
-    printf("Processing completed successfully");
+    printf("Processing completed successfully\n");
+    player_t player;
+    player_create("/dev/ttyJASON0", &player);
+    player_reproduce(&player, results, num_chunks, 100000);
+    pthread_join(player.thread_handle, NULL);
+    player_kill(&player);
+    
+
+
 }   
 
