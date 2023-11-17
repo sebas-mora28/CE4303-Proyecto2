@@ -3,6 +3,7 @@
 
 #include <float.h>
 #include <math.h>
+#include <signal.h>
 #include <stdlib.h>
 
 #include <fftw3.h>
@@ -15,7 +16,7 @@ static worker_result_t *OUTPUT_SONG_RESULTS;
 static size_t CHUNK_LENGTH;
 static size_t NUM_CHUNKS;
 static float FS;
-static player_t PLAYER;
+static player_t *PLAYER = NULL;
 static server_payload_t *SERVER_PAYLOAD = NULL;
 
 // TEST
@@ -184,18 +185,20 @@ int cleanup() {
 
   printf("Reproducing on motors...\n");
   // Instanciar player
-  player_create("/dev/ttyACM0", &PLAYER);
-  player_reproduce(&PLAYER, OUTPUT_SONG_RESULTS, NUM_CHUNKS,
+  PLAYER = (player_t *)malloc(sizeof(player_t));
+  player_create("/dev/ttyACM0", PLAYER);
+  player_reproduce(PLAYER, OUTPUT_SONG_RESULTS, NUM_CHUNKS,
                    CHUNK_TIME_QUANTUM * 1000000);
-  pthread_join(PLAYER.thread_handle, NULL);
+  pthread_join(PLAYER->thread_handle, NULL);
   printf("Done!\n");
 
   free(OUTPUT_SONG_RESULTS);
   free(OUTPUT_SONG);
   free(FULL_SONG);
   free(SERVER_PAYLOAD);
+  free(PLAYER);
 
-  player_kill(&PLAYER);
+  player_kill(PLAYER);
 
   return 0;
 }
@@ -236,6 +239,21 @@ void test_worker() {
   fftw_free(spectrum);
 }
 
+// Function to handle the SIGINT signal
+void handle_sigint(int signum) {
+  (void)signum;
+
+  printf("\nReceived SIGINT (Ctrl+C). Cleaning up...\n");
+
+  if (PLAYER == NULL) {
+    player_pause(PLAYER);
+    player_kill(PLAYER);
+    pthread_join(PLAYER->thread_handle, NULL);
+  }
+
+  exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     printf("Usage: %s <filename>\n", argv[0]);
@@ -245,6 +263,13 @@ int main(int argc, char *argv[]) {
   if (load_song(argv[1])) {
     return 1;
   };
+
+  // Register the handle_sigint function as the handler for SIGINT
+  if (signal(SIGINT, handle_sigint) == SIG_ERR) {
+    perror("Error setting up SIGINT handler");
+    return EXIT_FAILURE;
+  }
+
   test_worker();
   if (cleanup()) {
     return 1;
