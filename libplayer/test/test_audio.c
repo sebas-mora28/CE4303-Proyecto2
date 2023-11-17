@@ -140,10 +140,6 @@ void send_result(worker_result_t *result) {
   free(tone);
 }
 
-float martillo[21] = {392, 392, 440, 493, 493, 493, 440, 440, 440, 493, 392,
-                      392, 392, 440, 493, 493, 493, 440, 440, 392, 392};
-worker_result_t notes[21];
-
 // Llamar solo 1 vez al final
 int cleanup() {
   SF_INFO sfinfo;
@@ -168,20 +164,6 @@ int cleanup() {
   sf_close(outfile);
 
   printf("WAV file saved successfully: %s\n", filename);
-
-  // printf("First frequencies:\n");
-  // for (size_t i = 7 * FS; i < (7 * FS + 20); i++) {
-  //   printf("freq1: %f\n", OUTPUT_SONG_RESULTS[i].freq_1);
-  //   printf("freq2: %f\n", OUTPUT_SONG_RESULTS[i].freq_2);
-  //   printf("freq3: %f\n", OUTPUT_SONG_RESULTS[i].freq_3);
-  //   printf("freq4: %f\n", OUTPUT_SONG_RESULTS[i].freq_4);
-  // }
-
-  // for (int i = 0; i < 21; i++) {
-  //   OUTPUT_SONG_RESULTS[i].freq_1 = martillo[i];
-  //   OUTPUT_SONG_RESULTS[i].freq_2 = OUTPUT_SONG_RESULTS[i].freq_2;
-  //   OUTPUT_SONG_RESULTS[i].freq_3 = 0;
-  // }
 
   printf("Reproducing on motors...\n");
   // Instanciar player
