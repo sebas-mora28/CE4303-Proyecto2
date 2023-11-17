@@ -245,10 +245,8 @@ void handle_sigint(int signum) {
 
   printf("\nReceived SIGINT (Ctrl+C). Cleaning up...\n");
 
-  if (PLAYER == NULL) {
-    player_pause(PLAYER);
+  if (PLAYER != NULL) {
     player_kill(PLAYER);
-    pthread_join(PLAYER->thread_handle, NULL);
   }
 
   exit(EXIT_SUCCESS);
