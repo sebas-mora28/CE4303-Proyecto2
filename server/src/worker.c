@@ -11,8 +11,8 @@
 #include <unistd.h>
 
 #define NOTE_RELATIVE_RADIUS 1.059463094359
-#define NOTE_MINIMUM_MAGNITUDE 30
-#define NOTE_RELATIVE_MINIMUM_MAGNITUDE 0.4
+#define NOTE_MINIMUM_MAGNITUDE 60
+#define NOTE_RELATIVE_MINIMUM_MAGNITUDE 0.5
 #define MAX_FREQUENCIES_DETECTED 4
 #define MAX_FREQUENCY_CAP 880
 
@@ -25,7 +25,7 @@ void hamming(double *data, size_t size) {
 
 void magnitude(fftw_complex *data, size_t size) {
   for (size_t i = 0; i < size; ++i) {
-    data[i][0] = sqrt(data[i][0] * data[i][0] + data[i][1] + data[i][1]);
+    data[i][0] = sqrt(data[i][0] * data[i][0] + data[i][1] * data[i][1]);
   }
 }
 
