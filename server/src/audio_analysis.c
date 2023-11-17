@@ -7,8 +7,8 @@
 #define NOTE_MINIMUM_MAGNITUDE 60
 #define NOTE_RELATIVE_MINIMUM_MAGNITUDE 0.5
 #define MAX_FREQUENCIES_DETECTED 4
-#define MAX_FREQUENCY_CAP 7905
-#define MIN_FREQUENCY_FLOOR 64
+#define MAX_FREQUENCY_CAP 7900
+#define MIN_FREQUENCY_FLOOR 130
 
 void hamming(double *data, size_t size) {
   for (size_t i = 0; i < size; ++i) {
@@ -45,16 +45,16 @@ struct max_result find_max_real(fftw_complex *data, size_t length) {
   return result;
 }
 
-worker_result_t get_frequencies(server_payload_t payload, double *in_chunk,
-                                fftw_complex *spectrum, size_t spectrum_size,
-                                fftw_plan plan) {
+worker_result_t get_frequencies(float *chunk, int chunk_size, int samplerate,
+                                double *in_chunk, fftw_complex *spectrum,
+                                size_t spectrum_size, fftw_plan plan) {
   // Fill the fftw_complex array with your input data
-  for (int i = 0; i < payload.size; i++) {
-    in_chunk[i] = payload.data[i];
+  for (int i = 0; i < chunk_size; i++) {
+    in_chunk[i] = data[i];
   }
 
   // Aplicar hamming
-  hamming(in_chunk, payload.size);
+  hamming(in_chunk, chunk_size);
 
   // Execute the FFT
   fftw_execute(plan);
@@ -62,16 +62,15 @@ worker_result_t get_frequencies(server_payload_t payload, double *in_chunk,
   magnitude(spectrum, spectrum_size);
 
   // 0s antes de min freq
-  for (size_t f = 0;
-       f < (spectrum_size * 2 *
-            ((float)MIN_FREQUENCY_FLOOR / (float)payload.samplerate));
+  for (size_t f = 0; f < (spectrum_size * 2 *
+                          ((float)MIN_FREQUENCY_FLOOR / (float)samplerate));
        f++) {
     spectrum[f][0] = 0;
   }
 
   // 0s después de max freq
-  for (size_t f = (spectrum_size * 2 *
-                   ((float)MAX_FREQUENCY_CAP / (float)payload.samplerate));
+  for (size_t f =
+           (spectrum_size * 2 * ((float)MAX_FREQUENCY_CAP / (float)samplerate));
        f < spectrum_size; f++) {
     spectrum[f][0] = 0;
   }
@@ -87,8 +86,7 @@ worker_result_t get_frequencies(server_payload_t payload, double *in_chunk,
   for (size_t f = 0; f < MAX_FREQUENCIES_DETECTED; f++) {
     // Get peak
     max = find_max_real(spectrum, spectrum_size);
-    double freq =
-        ((float)max.max_idx / (float)(payload.size - 1)) * payload.samplerate;
+    double freq = ((float)max.max_idx / (float)(chunk_size - 1)) * samplerate;
     double mag = max.max_value[0];
     if (mag > NOTE_MINIMUM_MAGNITUDE && mag > relative_minimum_magnitude) {
       relative_minimum_magnitude = NOTE_RELATIVE_MINIMUM_MAGNITUDE * mag;
@@ -108,11 +106,11 @@ worker_result_t get_frequencies(server_payload_t payload, double *in_chunk,
       double low_bound = freq / NOTE_RELATIVE_RADIUS;
       double high_bound = freq * NOTE_RELATIVE_RADIUS;
 
-      long low_idx = floor((low_bound / payload.samplerate) * payload.size);
+      long low_idx = floor((low_bound / samplerate) * chunk_size);
       if (low_idx < 0) {
         low_idx = 0;
       }
-      size_t high_idx = ceil((high_bound / payload.samplerate) * payload.size);
+      size_t high_idx = ceil((high_bound / samplerate) * chunk_size);
       if (high_idx >= spectrum_size) {
         high_idx = spectrum_size;
       }
