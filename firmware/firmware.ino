@@ -145,9 +145,17 @@ void apply_command(){
         return;
     }
     uint32_t freq = atoll(fstr); 
+    uint32_t freq_f;
+    if(freq < 131){
+      freq_f = freq*2; 
+    }    else if((freq > 660)){
+      freq_f = freq*4;
+    }else{
+      freq_f = freq;
+    }
     digitalWrite(steppers[channel].neg_enable, HIGH); // disable
-    if(WriteTone(steppers[channel].step, freq)){
-        if(freq != 0){
+    if(WriteTone(steppers[channel].step, freq_f)){
+        if(freq_f != 0){
           digitalWrite(steppers[channel].neg_enable, LOW); // disable
         }
         Serial.printf("@%d%04"PRIu32";", channel, freq);
