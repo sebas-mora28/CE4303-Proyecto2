@@ -92,7 +92,8 @@ void distribute_loads(float* audio_data, int size, int sample_rate){
     player_reproduce(&player, results, num_chunks, 100000);
     pthread_join(player.thread_handle, NULL);
     player_kill(&player);
-    
+    free(out);
+    free(results);
 
 
 }   

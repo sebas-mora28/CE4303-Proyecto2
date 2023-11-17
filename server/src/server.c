@@ -54,6 +54,7 @@ void server() {
         int total_bytes_received = 0;
         char buffer[BUFFER_SIZE];
         int bytes_received;
+        printf("Receiving audio data\n");
         while ((bytes_received = recv(client_socket, buffer, BUFFER_SIZE, 0)) != 0) {
 
           for(int i=0; i < bytes_received; i++){
@@ -64,6 +65,7 @@ void server() {
 
         uint8_t* raw_data = (uint8_t*)(malloc(sizeof(uint8_t) * size));
         chacha20(encrypted_raw_data, size, raw_data);
+        free(encrypted_raw_data);
 
 
         FILE* file = fopen(TEMP_FILE, "w");
@@ -83,6 +85,7 @@ void server() {
             channels_combined[index] = (audio_data[i] + audio_data[i+1]) / 2;
             index++;
         }
+        free(audio_data);
     
         distribute_loads(channels_combined, channels_combined_size, sfinfo.samplerate);
         
