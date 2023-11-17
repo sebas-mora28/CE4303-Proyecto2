@@ -7,7 +7,8 @@
 #define NOTE_MINIMUM_MAGNITUDE 60
 #define NOTE_RELATIVE_MINIMUM_MAGNITUDE 0.5
 #define MAX_FREQUENCIES_DETECTED 4
-#define MAX_FREQUENCY_CAP 880
+#define MAX_FREQUENCY_CAP 7905
+#define MIN_FREQUENCY_FLOOR 64
 
 void hamming(double *data, size_t size) {
   for (size_t i = 0; i < size; ++i) {
@@ -60,6 +61,21 @@ worker_result_t get_frequencies(server_payload_t payload, double *in_chunk,
 
   magnitude(spectrum, spectrum_size);
 
+  // 0s antes de min freq
+  for (size_t f = 0;
+       f < (spectrum_size * 2 *
+            ((float)MIN_FREQUENCY_FLOOR / (float)payload.samplerate));
+       f++) {
+    spectrum[f][0] = 0;
+  }
+
+  // 0s después de max freq
+  for (size_t f = (spectrum_size * 2 *
+                   ((float)MAX_FREQUENCY_CAP / (float)payload.samplerate));
+       f < spectrum_size; f++) {
+    spectrum[f][0] = 0;
+  }
+
   struct max_result max = find_max_real(spectrum, spectrum_size);
   double relative_minimum_magnitude =
       NOTE_RELATIVE_MINIMUM_MAGNITUDE * max.max_value[0];
@@ -76,7 +92,13 @@ worker_result_t get_frequencies(server_payload_t payload, double *in_chunk,
     double mag = max.max_value[0];
     if (mag > NOTE_MINIMUM_MAGNITUDE && mag > relative_minimum_magnitude) {
       relative_minimum_magnitude = NOTE_RELATIVE_MINIMUM_MAGNITUDE * mag;
+
+      if (freq < MIN_FREQUENCY_FLOOR) {
+        printf("WARNING 4782\n");
+        continue;
+      }
       if (freq > MAX_FREQUENCY_CAP) {
+        printf("WARNING 4783\n");
         continue;
       }
 

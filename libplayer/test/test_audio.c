@@ -3,20 +3,12 @@
 
 #include <float.h>
 #include <math.h>
+#include <signal.h>
 #include <stdlib.h>
 
 #include <fftw3.h>
 #include <sndfile.h>
 #include <string.h>
-
-#define MAX_DATA_LENGTH 512000
-
-#define NOTE_RELATIVE_RADIUS 1.059463094359
-#define NOTE_MINIMUM_MAGNITUDE 60
-#define NOTE_RELATIVE_MINIMUM_MAGNITUDE 0.5
-#define MAX_FREQUENCIES_DETECTED 4
-#define MAX_FREQUENCY_CAP 880
-#define CHUNK_TIME_QUANTUM 0.1 // s
 
 static float *FULL_SONG;
 static float *OUTPUT_SONG;
@@ -24,7 +16,7 @@ static worker_result_t *OUTPUT_SONG_RESULTS;
 static size_t CHUNK_LENGTH;
 static size_t NUM_CHUNKS;
 static float FS;
-static player_t PLAYER;
+static player_t *PLAYER = NULL;
 static server_payload_t *SERVER_PAYLOAD = NULL;
 
 // TEST
@@ -64,11 +56,10 @@ int load_song(const char *filename) {
     FULL_SONG = realloc(FULL_SONG, CHUNK_LENGTH * NUM_CHUNKS * sizeof(float));
   }
   OUTPUT_SONG = (float *)malloc(CHUNK_LENGTH * NUM_CHUNKS * sizeof(float));
-  OUTPUT_SONG_RESULTS = (worker_result_t *)malloc(CHUNK_LENGTH * NUM_CHUNKS *
-                                                  sizeof(worker_result_t));
+  OUTPUT_SONG_RESULTS =
+      (worker_result_t *)malloc(NUM_CHUNKS * sizeof(worker_result_t));
   memset(OUTPUT_SONG, 0, CHUNK_LENGTH * NUM_CHUNKS * sizeof(float));
-  memset(OUTPUT_SONG_RESULTS, 0,
-         CHUNK_LENGTH * NUM_CHUNKS * sizeof(worker_result_t));
+  memset(OUTPUT_SONG_RESULTS, 0, NUM_CHUNKS * sizeof(worker_result_t));
 
   for (size_t i = sfinfo.frames; i < CHUNK_LENGTH * NUM_CHUNKS; i++) {
     FULL_SONG[i] = 0;
@@ -80,9 +71,6 @@ int load_song(const char *filename) {
   }
 
   sf_close(sndfile);
-
-  // Instanciar player
-  player_create("/dev/ttyACM0", &PLAYER);
 
   return 0;
 }
@@ -138,7 +126,7 @@ void send_result(worker_result_t *result) {
   for (size_t f = 0; f < 4; f++) {
     float frequency = frequencies[f];
     if (frequency > 0) {
-      printf("FREQ%zu: %g\n", f, frequency);
+      // printf("FREQ%zu: %g\n", f, frequency);
       generate_tone(tone, frequency, CHUNK_TIME_QUANTUM);
       for (size_t i = 0; i < CHUNK_LENGTH; i++) {
         OUTPUT_SONG[i + CHUNK_LENGTH * counter] += tone[i];
@@ -146,13 +134,15 @@ void send_result(worker_result_t *result) {
     }
   }
 
-  for (size_t i = 0; i < CHUNK_LENGTH; i++) {
-    OUTPUT_SONG_RESULTS[i + CHUNK_LENGTH * counter] = *result;
-  }
+  OUTPUT_SONG_RESULTS[counter] = *result;
 
   counter++;
   free(tone);
 }
+
+float martillo[21] = {392, 392, 440, 493, 493, 493, 440, 440, 440, 493, 392,
+                      392, 392, 440, 493, 493, 493, 440, 440, 392, 392};
+worker_result_t notes[21];
 
 // Llamar solo 1 vez al final
 int cleanup() {
@@ -179,18 +169,36 @@ int cleanup() {
 
   printf("WAV file saved successfully: %s\n", filename);
 
+  // printf("First frequencies:\n");
+  // for (size_t i = 7 * FS; i < (7 * FS + 20); i++) {
+  //   printf("freq1: %f\n", OUTPUT_SONG_RESULTS[i].freq_1);
+  //   printf("freq2: %f\n", OUTPUT_SONG_RESULTS[i].freq_2);
+  //   printf("freq3: %f\n", OUTPUT_SONG_RESULTS[i].freq_3);
+  //   printf("freq4: %f\n", OUTPUT_SONG_RESULTS[i].freq_4);
+  // }
+
+  // for (int i = 0; i < 21; i++) {
+  //   OUTPUT_SONG_RESULTS[i].freq_1 = martillo[i];
+  //   OUTPUT_SONG_RESULTS[i].freq_2 = OUTPUT_SONG_RESULTS[i].freq_2;
+  //   OUTPUT_SONG_RESULTS[i].freq_3 = 0;
+  // }
+
   printf("Reproducing on motors...\n");
-  player_reproduce(&PLAYER, OUTPUT_SONG_RESULTS, CHUNK_LENGTH * NUM_CHUNKS,
-                   100000);
+  // Instanciar player
+  PLAYER = (player_t *)malloc(sizeof(player_t));
+  player_create("/dev/ttyACM0", PLAYER);
+  player_reproduce(PLAYER, OUTPUT_SONG_RESULTS, NUM_CHUNKS,
+                   CHUNK_TIME_QUANTUM * 1000000);
+  pthread_join(PLAYER->thread_handle, NULL);
   printf("Done!\n");
 
   free(OUTPUT_SONG_RESULTS);
   free(OUTPUT_SONG);
   free(FULL_SONG);
   free(SERVER_PAYLOAD);
+  free(PLAYER);
 
-  pthread_join(PLAYER.thread_handle, NULL);
-  player_kill(&PLAYER);
+  player_kill(PLAYER);
 
   return 0;
 }
@@ -231,6 +239,19 @@ void test_worker() {
   fftw_free(spectrum);
 }
 
+// Function to handle the SIGINT signal
+void handle_sigint(int signum) {
+  (void)signum;
+
+  printf("\nReceived SIGINT (Ctrl+C). Cleaning up...\n");
+
+  if (PLAYER != NULL) {
+    player_kill(PLAYER);
+  }
+
+  exit(EXIT_SUCCESS);
+}
+
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     printf("Usage: %s <filename>\n", argv[0]);
@@ -240,6 +261,13 @@ int main(int argc, char *argv[]) {
   if (load_song(argv[1])) {
     return 1;
   };
+
+  // Register the handle_sigint function as the handler for SIGINT
+  if (signal(SIGINT, handle_sigint) == SIG_ERR) {
+    perror("Error setting up SIGINT handler");
+    return EXIT_FAILURE;
+  }
+
   test_worker();
   if (cleanup()) {
     return 1;
