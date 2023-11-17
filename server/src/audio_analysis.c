@@ -7,7 +7,7 @@
 #define NOTE_MINIMUM_MAGNITUDE 60
 #define NOTE_RELATIVE_MINIMUM_MAGNITUDE 0.5
 #define MAX_FREQUENCIES_DETECTED 4
-#define MAX_FREQUENCY_CAP 7900
+#define MAX_FREQUENCY_CAP 2400
 #define MIN_FREQUENCY_FLOOR 130
 
 void hamming(double *data, size_t size) {
