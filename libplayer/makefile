@@ -1,6 +1,6 @@
 CC=gcc 
 IDIR=include
-CFLAGS=-g -I../server/include -I$(IDIR) -Wall -Wextra -Werror -static
+CFLAGS=-g -I../server/include -I$(IDIR) -Wall -Wextra -Werror
 SRCDIR=src
 ODIR=bin
 SRCEXT=c
