@@ -6,7 +6,7 @@ ODIR=bin
 SRCEXT=c
 HDREXT=h
 
-LIBS=-lpthread,m
+LIBS=-lpthread -lm
 
 # Headers dentro de include/
 DEPS= $(shell find $(IDIR) -type f -name "*.$(HDREXT)")
@@ -22,7 +22,7 @@ $(ODIR)/%.o: $(SRCDIR)/%.c $(DEPS) $(EXT_DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 libplayer.a: $(OBJ)
-	ar rcs $(ODIR)/$@ $^ $(LIBS)
+	ar rcs $(ODIR)/$@ $^
 
 test: libplayer.a
 	$(CC) test/test.c -o bin/test -lplayer -Lbin -lpthread -lm $(CFLAGS)
