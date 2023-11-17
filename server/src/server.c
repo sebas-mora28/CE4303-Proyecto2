@@ -79,7 +79,7 @@ void server() {
         int channels_combined_size = items / 2;
         float* channels_combined = malloc(sizeof(float) * channels_combined_size);
         int index = 0;
-        for(int i=0; i < items ; i+= 1){
+        for(int i=0; i < items ; i+= 2){
             channels_combined[index] = (audio_data[i] + audio_data[i+1]) / 2;
             index++;
         }

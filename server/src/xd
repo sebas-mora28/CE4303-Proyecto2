@@ -46,51 +46,53 @@ void fill_zeros(float * audio_data, int size, int num_zeros, float* out){
 
 
 void distribute_loads(float* audio_data, int size, int sample_rate){
+
+    printf("Pasa\n");
+    return;
+
     int chunk_size = (int)(QUANTUM * sample_rate);
     int num_chunks = calculate_chunks(size, chunk_size);
     int num_zeros = calculate_zeros(size, chunk_size, num_chunks);  
-
     float* out = (float*) malloc(sizeof(float) * (size + num_zeros)); // new size iss size + num_zeros
     fill_zeros(audio_data, size, num_zeros, out);
 
-    int chunks_per_node =  num_chunks / NODES;
 
+
+
+
+
+    int chunks_per_node =  (float)num_chunks / NODES;
+
+    printf("chunk_sizes %d\n num_zeros: %d  size %d\n", num_chunks, num_zeros, size);
+
+    return;
     worker_result_t* results = (worker_result_t*) malloc(sizeof(worker_result_t) * num_chunks);
-    printf("num_chunks %d\n", num_chunks);
-    printf("chunk_per_node %d\n", chunks_per_node);
-    printf("chunk_size %d\n", chunk_size);
-    printf("size %d\n", size + num_zeros);
     int start;
-    int results_index = 0;
-
+    int chunks_processed = 0;
     int i;
-    for(i=1; i<= NODES; i++){
+    for(i=1; i< NODES -1; i++){
 
-        start =  (i - 1) * (chunk_size * chunks_per_node);
-
-        server_payload_t* payload = malloc(sizeof(server_payload_t));
-        payload->chunk_size = chunk_size;
-        payload->num_chunks = chunks_per_node;
-        payload->samplerate = sample_rate;
-        for(int x=0; x< chunk_size * chunks_per_node; x++){
-            payload->data[x] = out[start + x];
+        start =  i * (chunk_size * chunks_per_node);
+        server_payload_t payload;
+        payload.chunk_size = chunk_size;
+        payload.num_chunks = chunks_per_node;
+        payload.samplerate = sample_rate;
+        
+        for(int x=0; x< chunk_size; x++){
+            payload.data[x] = out[start + x];
         } 
-        send_payload(payload, i);
+        send_payload(&payload, i);
+        chunks_processed += chunks_per_node;
     }
-    
+
+
+    printf("-----------------------------------------------------------\n");
     for(int source=1; source <=NODES; source++){
-            payload_worker_result_t* result = malloc(sizeof(payload_worker_result_t));
-            recv_result(result, source);  
-
-            for(int i=0; i<chunks_per_node; i++){
-                results[results_index] = result->data[i];
-                results_index++;
-            }
- 
-
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
-
+        payload_worker_result_t result;
+            recv_result(&result, source);     
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    
     printf("Processing completed successfully\n");
     player_t player;
     player_create("/dev/ttyJASON0", &player);
