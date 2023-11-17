@@ -100,7 +100,7 @@ void recv_payload(server_payload_t **payload) {
     }
   }
 
-  (*payload)->size = CHUNK_LENGTH;
+  (*payload)->chunk_size = CHUNK_LENGTH;
   (*payload)->samplerate = FS;
 
   counter++;
@@ -206,18 +206,19 @@ int cleanup() {
 void test_worker() {
   server_payload_t *payload;
   recv_payload(&payload);
-  printf("Processing test worker chunk_size %d fs %d\n", payload->size,
+  printf("Processing test worker chunk_size %d fs %d\n", payload->chunk_size,
          payload->samplerate);
 
   // Allocate input and output arrays
-  size_t spectrum_size = (payload->size / 2) + 1;
-  double *in_chunk = (double *)fftw_malloc(sizeof(double) * payload->size);
+  size_t spectrum_size = (payload->chunk_size / 2) + 1;
+  double *in_chunk =
+      (double *)fftw_malloc(sizeof(double) * payload->chunk_size);
   fftw_complex *spectrum =
       (fftw_complex *)fftw_malloc(sizeof(fftw_complex) * spectrum_size);
 
   // Create a plan for the FFT
-  fftw_plan plan =
-      fftw_plan_dft_r2c_1d(payload->size, in_chunk, spectrum, FFTW_ESTIMATE);
+  fftw_plan plan = fftw_plan_dft_r2c_1d(payload->chunk_size, in_chunk, spectrum,
+                                        FFTW_ESTIMATE);
 
   if (!plan) {
     fprintf(stderr, "Error: FFTW plan creation failed\n");
@@ -225,8 +226,9 @@ void test_worker() {
   }
 
   for (size_t motapod = 0; motapod < NUM_CHUNKS; motapod++) {
-    worker_result_t result =
-        get_frequencies(*payload, in_chunk, spectrum, spectrum_size, plan);
+    worker_result_t result = get_frequencies(
+        &(payload->data[0]), payload->chunk_size, payload->samplerate, in_chunk,
+        spectrum, spectrum_size, plan);
 
     send_result(&result);
     // MPI_Barrier(MPI_COMM_WORLD);
