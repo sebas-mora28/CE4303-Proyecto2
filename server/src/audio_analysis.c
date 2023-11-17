@@ -50,7 +50,7 @@ worker_result_t get_frequencies(float *chunk, int chunk_size, int samplerate,
                                 size_t spectrum_size, fftw_plan plan) {
   // Fill the fftw_complex array with your input data
   for (int i = 0; i < chunk_size; i++) {
-    in_chunk[i] = data[i];
+    in_chunk[i] = chunk[i];
   }
 
   // Aplicar hamming
