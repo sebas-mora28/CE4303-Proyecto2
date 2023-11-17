@@ -83,12 +83,6 @@ void worker(int id) {
     for (int i = 0; i < payload.size; i++) {
       in_chunk[i] = payload.data[i];
     }
-    if (i == 99) {
-      printf("CHUNK 100 FIRST 20\n");
-      for (size_t j = 0; j < 20; j++) {
-        printf("\t%f\n", in_chunk[j]);
-      }
-    }
 
     // Aplicar hamming
     hamming(in_chunk, payload.size);
