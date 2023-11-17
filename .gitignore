@@ -55,3 +55,9 @@ dkms.conf
 build/
 bin/
 
+# Audios
+*.wav
+
+# clangd
+.cache/
+compile_commands.json
