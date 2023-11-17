@@ -27,6 +27,9 @@ libplayer.a: $(OBJ)
 test: libplayer.a
 	$(CC) test/test.c -o bin/test -lplayer -Lbin -lpthread -lm $(CFLAGS)
 
+test_audio: libplayer.a
+	$(CC) test/test_audio.c ../server/src/audio_analysis.c -o bin/test_audio -Lbin $(CFLAGS) -lplayer -lm -lfftw3 -lsndfile -fsanitize=address
+
 .PHONY: clean
 
 clean:
