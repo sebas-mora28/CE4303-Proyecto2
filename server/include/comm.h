@@ -12,7 +12,7 @@ void recv_payload(server_payload_t* payload);
 
 void recv_result(worker_result_t* result, int source);
 
-void send_result(worker_result_t* result);
+void send_result(payload_worker_result_t* result);
 
 
 
