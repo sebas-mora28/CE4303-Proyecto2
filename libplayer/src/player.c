@@ -143,7 +143,9 @@ void player_pause(player_t* player) { player->state = PAUSE; }
 void player_continue(player_t* player) { player->state = PLAYING; }
 
 int player_kill(player_t* player) {
-  player->state = STOP;
+  if (player->state != DEAD) {
+    player->state = STOP;
+  }
   while (player->state != DEAD) {
     continue;
   }

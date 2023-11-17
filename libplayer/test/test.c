@@ -15,7 +15,7 @@ int main() {
   
   player_t player;
   player_create("/dev/ttyACM0", &player);
-  player_reproduce(&player, notes, 21, 500000);
+  player_reproduce(&player, notes, 21, 400000);
   pthread_join(player.thread_handle, NULL);
   player_kill(&player);
 }
