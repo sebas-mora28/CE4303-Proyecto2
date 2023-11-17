@@ -42,7 +42,6 @@ void worker(int id) {
     }
 
 
-    printf("Llega\n");
     for (size_t i = 0; i < payload->num_chunks; i++) {
       worker_result_t result = get_frequencies(
           &(payload->data[i * payload->chunk_size]), payload->chunk_size,
