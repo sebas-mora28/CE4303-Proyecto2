@@ -5,7 +5,7 @@ BINDIR= bin
 SRCEXT= c
 SOURCES := $(shell find $(SRCDIR) -type f -name *.$(SRCEXT))
 OBJECTS := $(SOURCES:.$(SRCEXT)=.o)
-LIBS= -lsndfile -lm
+LIBS= -lsndfile -lm -lfftw3
 
 all: exec 
 
