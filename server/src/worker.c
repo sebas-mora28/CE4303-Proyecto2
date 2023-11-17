@@ -77,7 +77,7 @@ void worker(int id) {
 
   // Array for frequencies
   float frequencies[MAX_FREQUENCIES_DETECTED];
-  for (size_t i = 0; i < 600; i++) {
+  while (1) {
 
     // Fill the fftw_complex array with your input data
     for (int i = 0; i < payload.size; i++) {
