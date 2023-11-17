@@ -86,6 +86,7 @@ void server() {
     
         distribute_loads(channels_combined, channels_combined_size, sfinfo.samplerate);
         
+        printf("End !\n");
         // Close the client socket
         close(client_socket);
     }

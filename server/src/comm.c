@@ -17,8 +17,6 @@ void send_payload(server_payload_t *payload, int destination) {
   chacha20(data, SERVER_PAYLOAD_SIZE, encrypt_data);
   MPI_Send(encrypt_data, SERVER_PAYLOAD_SIZE, MPI_BYTE, destination, 0,
            MPI_COMM_WORLD);
-  free(encrypt_data);
-  free(payload);
 }
 
 void recv_payload(server_payload_t *payload) {
@@ -28,9 +26,7 @@ void recv_payload(server_payload_t *payload) {
   uint8_t* decrypt_data = malloc(SERVER_PAYLOAD_SIZE);
   chacha20(encrypt_data, SERVER_PAYLOAD_SIZE, decrypt_data);
 
- memcpy(payload, decrypt_data, SERVER_PAYLOAD_SIZE);
- free(encrypt_data);
- free(decrypt_data);
+  memcpy(payload, decrypt_data, SERVER_PAYLOAD_SIZE);
 }
 
 void recv_result(payload_worker_result_t *result, int source) {
@@ -40,8 +36,6 @@ void recv_result(payload_worker_result_t *result, int source) {
     uint8_t* dencrypted_result = malloc( WORKER_RESULT_SIZE);
     chacha20(encrypted_result, WORKER_RESULT_SIZE, dencrypted_result);
     memcpy(result, dencrypted_result, WORKER_RESULT_SIZE);
-    free(encrypted_result);
-    free(dencrypted_result);
 }
 
 void send_result(payload_worker_result_t *result) {
@@ -52,6 +46,4 @@ void send_result(payload_worker_result_t *result) {
   chacha20(data, WORKER_RESULT_SIZE, encrypt_data);
   MPI_Send(encrypt_data, WORKER_RESULT_SIZE, MPI_BYTE, CENTRAL_NODE, 0,
             MPI_COMM_WORLD);
-  free(encrypt_data);
-  free(result);
 }

@@ -25,7 +25,6 @@ int calculate_zeros(int size, int chunk_size, int num_chunks){
 
 int calculate_chunks(int size, int chunk_size){
     int num_chunks = ceil((float) size / chunk_size);
-    printf("num chunks linea 28 %d\n", num_chunks);
     if(num_chunks % NODES != 0){
         num_chunks++;
     }
@@ -56,10 +55,6 @@ void distribute_loads(float* audio_data, int size, int sample_rate){
     int chunks_per_node =  num_chunks / NODES;
 
     worker_result_t* results = (worker_result_t*) malloc(sizeof(worker_result_t) * num_chunks);
-    printf("num_chunks %d\n", num_chunks);
-    printf("chunk_per_node %d\n", chunks_per_node);
-    printf("chunk_size %d\n", chunk_size);
-    printf("size %d\n", size + num_zeros);
     int start;
     int results_index = 0;
 

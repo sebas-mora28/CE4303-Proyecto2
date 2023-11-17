@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define MAX_DATA_LENGTH 6144000
+#define MAX_DATA_LENGTH 20000000
 
 typedef struct {
   int samplerate;
